@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Das BGB – Interaktive Übung</title>
+  <style>
+    :root {
+      --grn:       #15803d;
+      --grn-dark:  #14532d;
+      --grn-light: #bbf7d0;
+      --grn-bg:    #f0fdf4;
+      --orange:    #d97706;
+      --orange-bg: #fffbeb;
+      --red:       #dc2626;
+      --red-bg:    #fef2f2;
+      --blue:      #1d4ed8;
+      --purple:    #6b21a8;
+      --card-bg:   #ffffff;
+      --body-bg:   #f1f5f9;
+      --text:      #1e293b;
+      --muted:     #64748b;
+      --border:    #e2e8f0;
+      --shadow:    0 2px 12px rgba(0,0,0,0.08);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--body-bg); color: var(--text); min-height: 100vh; }
+
+    /* ── HEADER ──────────────────────────────────── */
+    header {
+      background: linear-gradient(135deg, var(--grn-dark) 0%, var(--grn) 100%);
+      color: #fff; padding: 1.8rem 1.5rem 1.4rem; text-align: center;
+    }
+    header h1 { font-size: 1.9rem; font-weight: 700; margin-bottom: .35rem; }
+    header p  { font-size: .95rem; opacity: .88; }
+
+    /* ── LAYOUT ──────────────────────────────────── */
+    .container { max-width: 1100px; margin: 0 auto; padding: 1.4rem 1rem 3rem; }
+
+    .info-box {
+      background: var(--card-bg); border-left: 4px solid var(--grn);
+      border-radius: 8px; padding: 1rem 1.3rem; box-shadow: var(--shadow); margin-bottom: 1.4rem;
+    }
+    .info-box h2 { font-size: 1rem; color: var(--grn); margin-bottom: .4rem; }
+    .info-box p  { font-size: .9rem; line-height: 1.65; color: var(--muted); }
+
+    .section-title {
+      font-size: 1.1rem; font-weight: 700; color: var(--grn-dark);
+      border-bottom: 2px solid var(--grn); padding-bottom: .4rem; margin-bottom: 1rem;
+    }
+
+    /* ── PROGRESS BAR ─────────────────────────────── */
+    .progress-wrap {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 1.2rem;
+      background: var(--card-bg); border-radius: 8px; padding: .7rem 1rem; box-shadow: var(--shadow);
+    }
+    .progress-label { font-size: .88rem; font-weight: 600; color: var(--grn); white-space: nowrap; min-width: 140px; }
+    .progress-bar   { flex: 1; height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; }
+    .progress-fill  { height: 100%; background: var(--grn); border-radius: 5px; transition: width .4s; width: 0%; }
+
+    /* ── BEGRIFFE-POOL ────────────────────────────── */
+    .pool-wrap {
+      background: var(--card-bg); border-radius: 10px; padding: 1rem 1.1rem;
+      box-shadow: var(--shadow); margin-bottom: 1.4rem; min-height: 80px;
+      border: 2px dashed var(--border);
+    }
+    .pool-title { font-size: .82rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: .7rem; }
+    .pool-inner { display: flex; flex-wrap: wrap; gap: 8px; }
+    .pool-wrap.drag-over { border-color: var(--grn); background: var(--grn-bg); }
+
+    /* ── CHIPS ────────────────────────────────────── */
+    .chip {
+      background: var(--orange-bg); border: 1.5px solid var(--orange);
+      color: #78350f; border-radius: 20px; padding: .3rem .85rem;
+      font-size: .85rem; font-weight: 600; cursor: grab;
+      user-select: none; transition: transform .12s, box-shadow .12s, background .15s;
+      display: inline-flex; align-items: center; gap: 5px;
+    }
+    .chip:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.12); }
+    .chip.selected {
+      background: var(--orange); color: #fff; border-color: #b45309;
+      box-shadow: 0 0 0 3px rgba(217,119,6,.35);
+    }
+    .chip.dragging { opacity: .4; }
+    .chip.correct  { background: var(--grn-bg); border-color: var(--grn); color: var(--grn-dark); }
+    .chip.wrong    { background: var(--red-bg); border-color: var(--red); color: var(--red); }
+
+    /* ── BÜCHER-GRID ──────────────────────────────── */
+    .bucher-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-bottom: 1.4rem;
+    }
+    @media (max-width: 900px) { .bucher-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 600px) { .bucher-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    .buch-card {
+      background: var(--card-bg); border-radius: 10px; box-shadow: var(--shadow);
+      overflow: hidden; border: 2px solid var(--border); display: flex; flex-direction: column;
+      transition: border-color .2s;
+    }
+    .buch-card.drag-over { border-color: var(--grn); background: var(--grn-bg); }
+
+    .buch-header {
+      padding: .7rem .8rem; text-align: center;
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .buch-name  { font-size: .88rem; font-weight: 700; color: #fff; line-height: 1.25; }
+    .buch-para  { font-size: .73rem; color: rgba(255,255,255,.8); font-weight: 400; }
+
+    /* Book colors */
+    .buch-1 .buch-header { background: #15803d; }
+    .buch-2 .buch-header { background: #1d4ed8; }
+    .buch-3 .buch-header { background: #b45309; }
+    .buch-4 .buch-header { background: #7c3aed; }
+    .buch-5 .buch-header { background: #be185d; }
+
+    .buch-drop {
+      flex: 1; padding: .6rem; min-height: 160px;
+      display: flex; flex-direction: column; gap: 5px;
+      cursor: pointer;
+    }
+    .buch-drop .chip { cursor: pointer; font-size: .8rem; padding: .25rem .7rem; border-radius: 16px; justify-content: space-between; }
+    .buch-drop .chip .remove-hint { font-size: .7rem; opacity: .5; }
+
+    .drop-hint {
+      color: var(--muted); font-size: .78rem; font-style: italic; text-align: center;
+      padding: .4rem; display: none;
+    }
+    .buch-drop:empty .drop-hint,
+    .buch-drop .drop-hint:only-child { display: block; }
+
+    /* ── BUTTONS ──────────────────────────────────── */
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 1.4rem; }
+
+    .btn {
+      border: none; border-radius: 8px; padding: .65rem 1.6rem;
+      font-size: .95rem; font-weight: 600; cursor: pointer; transition: opacity .2s, transform .1s;
+    }
+    .btn:hover { opacity: .88; transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+    .btn-primary { background: var(--grn); color: #fff; }
+    .btn-secondary { background: transparent; border: 1.5px solid var(--border); color: var(--muted); }
+    .btn-secondary:hover { border-color: var(--grn); color: var(--grn); }
+
+    /* ── ERGEBNIS ─────────────────────────────────── */
+    .ergebnis-box {
+      display: none; border-radius: 10px; padding: 1rem 1.2rem;
+      margin-bottom: 1.4rem; font-weight: 600; font-size: .95rem;
+      border: 2px solid; text-align: center;
+    }
+    .ergebnis-box.show { display: block; }
+    .ergebnis-box.perfekt { background: var(--grn-bg); border-color: var(--grn); color: var(--grn-dark); }
+    .ergebnis-box.gut    { background: #fefce8; border-color: #ca8a04; color: #713f12; }
+    .ergebnis-box.knapp  { background: var(--red-bg); border-color: var(--red); color: var(--red); }
+
+    /* ── FRAGEN ───────────────────────────────────── */
+    .fragen-section { margin-top: 2rem; }
+
+    .frage-card {
+      background: var(--card-bg); border-radius: 10px; box-shadow: var(--shadow);
+      border: 1px solid var(--border); overflow: hidden; margin-bottom: 1rem;
+    }
+    .frage-nr {
+      background: linear-gradient(90deg, var(--grn-dark) 0%, var(--grn) 100%);
+      color: #fff; padding: .65rem 1rem; font-size: .85rem; font-weight: 700;
+    }
+    .frage-body { padding: 1rem; }
+    .frage-text { font-size: .92rem; line-height: 1.6; margin-bottom: .7rem; font-weight: 500; }
+
+    .antwort-area {
+      width: 100%; border: 1.5px solid var(--border); border-radius: 6px;
+      padding: .6rem .8rem; font-size: .9rem; font-family: inherit;
+      resize: vertical; min-height: 80px; outline: none; transition: border-color .2s;
+    }
+    .antwort-area:focus { border-color: var(--grn); }
+
+    .muster-btn {
+      margin-top: .6rem; background: transparent;
+      border: 1.5px solid var(--grn); color: var(--grn);
+      border-radius: 6px; padding: .35rem .9rem; font-size: .83rem;
+      font-weight: 600; cursor: pointer; transition: background .15s;
+    }
+    .muster-btn:hover { background: var(--grn-bg); }
+
+    .musterloesung {
+      display: none; margin-top: .7rem; background: var(--grn-bg);
+      border-left: 3px solid var(--grn); border-radius: 6px;
+      padding: .7rem 1rem; font-size: .88rem; line-height: 1.65; color: #14532d;
+    }
+    .musterloesung.show { display: block; }
+    .musterloesung strong { color: var(--grn-dark); }
+
+    /* ── FOOTER ───────────────────────────────────── */
+    footer {
+      text-align: center; padding: 1.2rem; color: var(--muted);
+      font-size: .8rem; border-top: 1px solid var(--border); margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>📚 Das Bürgerliche Gesetzbuch (BGB)</h1>
+  <p>Interaktive Übung: Begriffe zuordnen &amp; Textfragen beantworten</p>
+</header>
+
+<div class="container">
+
+  <!-- ── INFO ──────────────────────────────────── -->
+  <div class="info-box">
+    <h2>Aufgabenstellung</h2>
+    <p>Das BGB gliedert sich in fünf Bücher. Ordne alle 30 Rechtsbegriffe und juristischen Fachausdrücke dem richtigen Buch des BGB zu, indem du auf einen Begriff klickst (er leuchtet auf) und dann auf die gewünschte Bücher-Spalte klickst. Einen bereits zugeordneten Begriff kannst du durch Anklicken wieder in den Vorrat zurücklegen. Erst wenn alle 30 Begriffe zugeordnet sind, kann die Überprüfung gestartet werden.</p>
+  </div>
+
+  <!-- ── FORTSCHRITT ────────────────────────────── -->
+  <div class="progress-wrap">
+    <div class="progress-label">🔄 <span id="count">0</span> / 30 zugeordnet</div>
+    <div class="progress-bar"><div class="progress-fill" id="prog-fill"></div></div>
+  </div>
+
+  <!-- ── TEIL 1 ─────────────────────────────────── -->
+  <div class="section-title">Teil 1 – Begriffe zuordnen</div>
+
+  <!-- Begriff-Pool -->
+  <div class="pool-wrap" id="pool" onclick="poolClicked()">
+    <div class="pool-title">📦 Vorrat – noch nicht zugeordnet</div>
+    <div class="pool-inner" id="pool-inner"></div>
+  </div>
+
+  <!-- 5 Bücher -->
+  <div class="bucher-grid">
+    <div class="buch-card buch-1" id="buch-1" onclick="buchClicked(1)">
+      <div class="buch-header">
+        <div class="buch-name">Allgemeiner Teil</div>
+        <div class="buch-para">§§ 1 – 240</div>
+      </div>
+      <div class="buch-drop" id="drop-1">
+        <div class="drop-hint">Hier klicken um Begriff einzufügen</div>
+      </div>
+    </div>
+    <div class="buch-card buch-2" id="buch-2" onclick="buchClicked(2)">
+      <div class="buch-header">
+        <div class="buch-name">Schuldrecht</div>
+        <div class="buch-para">§§ 241 – 853</div>
+      </div>
+      <div class="buch-drop" id="drop-2">
+        <div class="drop-hint">Hier klicken um Begriff einzufügen</div>
+      </div>
+    </div>
+    <div class="buch-card buch-3" id="buch-3" onclick="buchClicked(3)">
+      <div class="buch-header">
+        <div class="buch-name">Sachenrecht</div>
+        <div class="buch-para">§§ 854 – 1296</div>
+      </div>
+      <div class="buch-drop" id="drop-3">
+        <div class="drop-hint">Hier klicken um Begriff einzufügen</div>
+      </div>
+    </div>
+    <div class="buch-card buch-4" id="buch-4" onclick="buchClicked(4)">
+      <div class="buch-header">
+        <div class="buch-name">Familienrecht</div>
+        <div class="buch-para">§§ 1297 – 1921</div>
+      </div>
+      <div class="buch-drop" id="drop-4">
+        <div class="drop-hint">Hier klicken um Begriff einzufügen</div>
+      </div>
+    </div>
+    <div class="buch-card buch-5" id="buch-5" onclick="buchClicked(5)">
+      <div class="buch-header">
+        <div class="buch-name">Erbrecht</div>
+        <div class="buch-para">§§ 1922 – 2385</div>
+      </div>
+      <div class="buch-drop" id="drop-5">
+        <div class="drop-hint">Hier klicken um Begriff einzufügen</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Buttons -->
+  <div class="btn-row">
+    <button class="btn btn-primary" id="check-btn" onclick="checkAnswers()" disabled>✅ Überprüfen</button>
+    <button class="btn btn-secondary" onclick="resetAll()">↺ Alles zurücksetzen</button>
+  </div>
+
+  <!-- Ergebnis -->
+  <div class="ergebnis-box" id="ergebnis"></div>
+
+  <!-- ── TEIL 2 – TEXTFRAGEN ─────────────────────── -->
+  <div class="fragen-section">
+    <div class="section-title">Teil 2 – Fragen zum Text</div>
+
+    <div class="frage-card">
+      <div class="frage-nr">Frage 1 von 5</div>
+      <div class="frage-body">
+        <div class="frage-text">Warum wird der Allgemeine Teil des BGB (1. Buch) mit einer „mathematischen Formel vor der Klammer" verglichen? Erkläre das Bild und nenne ein konkretes Beispiel aus dem Text.</div>
+        <textarea class="antwort-area" placeholder="Deine Antwort …"></textarea>
+        <button class="muster-btn" onclick="toggleMuster(this)">📋 Musterlösung anzeigen</button>
+        <div class="musterloesung">
+          <strong>Musterlösung:</strong> Wie ein Ausdruck vor einer Klammer in der Mathematik für alle Terme innerhalb der Klammer gilt, enthält der Allgemeine Teil Regelungen und Definitionen, die für alle anderen Bücher des BGB und das gesamte Zivilrecht gelten – sofern dort keine besonderen Regelungen bestehen. Beispiel: § 90 BGB definiert, was eine „Sache" ist. Dieser Begriff wird dann im 2. Buch (§ 433 BGB), im 3. Buch (§ 929 BGB), im 4. Buch (§ 1362 II BGB) und im 5. Buch (§ 2164 BGB) verwendet, ohne ihn dort jedes Mal neu definieren zu müssen.
+        </div>
+      </div>
+    </div>
+
+    <div class="frage-card">
+      <div class="frage-nr">Frage 2 von 5</div>
+      <div class="frage-body">
+        <div class="frage-text">Was ist der Unterschied zwischen „relativen Rechten" im Schuldrecht und „absoluten Rechten" im Sachenrecht? Verwende die lateinischen Fachbegriffe und nenne jeweils ein Beispiel aus dem Text.</div>
+        <textarea class="antwort-area" placeholder="Deine Antwort …"></textarea>
+        <button class="muster-btn" onclick="toggleMuster(this)">📋 Musterlösung anzeigen</button>
+        <div class="musterloesung">
+          <strong>Musterlösung:</strong> Im <strong>Schuldrecht</strong> (lat. <em>ius in personam</em>) handelt es sich um <strong>relative Rechte</strong> – Rechte, die eine Person gegenüber einer anderen bestimmten Person hat, z. B. der Anspruch auf Zahlung des Kaufpreises oder ein Schadensersatzanspruch. Im <strong>Sachenrecht</strong> (lat. <em>ius in rem</em>) handelt es sich um <strong>absolute Rechte</strong> – Rechte, die eine Person an einer Sache gegenüber jedermann hat, z. B. das Eigentumsrecht an einer Sache (§ 903 BGB).
+        </div>
+      </div>
+    </div>
+
+    <div class="frage-card">
+      <div class="frage-nr">Frage 3 von 5</div>
+      <div class="frage-body">
+        <div class="frage-text">Welche zwei Arten von Schuldverhältnissen unterscheidet das 2. Buch des BGB? Erkläre, wie sie jeweils entstehen, und nenne je ein Beispiel aus dem Text.</div>
+        <textarea class="antwort-area" placeholder="Deine Antwort …"></textarea>
+        <button class="muster-btn" onclick="toggleMuster(this)">📋 Musterlösung anzeigen</button>
+        <div class="musterloesung">
+          <strong>Musterlösung:</strong> Das Schuldrecht unterscheidet zwei Arten: <br><br>
+          1. <strong>Vertragliche Schuldverhältnisse</strong>: Sie entstehen durch den Abschluss eines Vertrages. Beispiel: Beim Kaufvertrag (§ 433 BGB) kann der Käufer (als Gläubiger) vom Verkäufer (als Schuldner) die Übergabe der Kaufsache und die Eigentumsverschaffung verlangen.<br><br>
+          2. <strong>Gesetzliche Schuldverhältnisse</strong>: Sie entstehen nicht durch einen Vertrag, sondern durch die Verwirklichung eines gesetzlichen Tatbestandes. Beispiel: Schadensersatzpflicht aus § 823 BGB – wer jemanden schädigt, ist kraft Gesetzes zum Schadensersatz verpflichtet, ohne dass ein Vertrag besteht.
+        </div>
+      </div>
+    </div>
+
+    <div class="frage-card">
+      <div class="frage-nr">Frage 4 von 5</div>
+      <div class="frage-body">
+        <div class="frage-text">Was regelt das Familienrecht (4. Buch des BGB) über die Ehe und die Familie hinaus? Nenne die im Text genannten gesetzlichen Vertretungsfunktionen und erkläre, warum sie im Familienrecht geregelt sind.</div>
+        <textarea class="antwort-area" placeholder="Deine Antwort …"></textarea>
+        <button class="muster-btn" onclick="toggleMuster(this)">📋 Musterlösung anzeigen</button>
+        <div class="musterloesung">
+          <strong>Musterlösung:</strong> Das Familienrecht regelt neben den Rechtsverhältnissen, die durch Ehe, Lebenspartnerschaft, Familie und Verwandtschaft entstehen, auch die <strong>gesetzlichen Vertretungsfunktionen</strong>: <strong>Vormundschaft</strong> (für Minderjährige ohne Eltern), <strong>Pflegschaft</strong> (für bestimmte Angelegenheiten einer Person) und <strong>rechtliche Betreuung</strong> (für Volljährige, die ihre Angelegenheiten nicht selbst regeln können). Diese Funktionen werden im Familienrecht geregelt, weil sie – ähnlich wie die elterliche Sorge – auf einer besonderen persönlichen Fürsorgebeziehung beruhen und neben der natürlichen Verwandtschaft bestehen.
+        </div>
+      </div>
+    </div>
+
+    <div class="frage-card">
+      <div class="frage-nr">Frage 5 von 5</div>
+      <div class="frage-body">
+        <div class="frage-text">Erkläre das im Text beschriebene Prinzip „vom Allgemeinen zum Besonderen" im BGB. Nenne zwei verschiedene Beispiele aus dem Text, an denen dieses Prinzip deutlich wird.</div>
+        <textarea class="antwort-area" placeholder="Deine Antwort …"></textarea>
+        <button class="muster-btn" onclick="toggleMuster(this)">📋 Musterlösung anzeigen</button>
+        <div class="musterloesung">
+          <strong>Musterlösung:</strong> Das Prinzip „vom Allgemeinen zum Besonderen" bedeutet, dass im BGB zunächst allgemeine Regelungen aufgestellt werden, die dann durch immer speziellere Normen ergänzt und konkretisiert werden. <br><br>
+          <strong>Beispiel 1 (innerhalb eines Paragrafen-Bereichs):</strong> § 90 BGB definiert allgemein, was Sachen im Sinne des Gesetzes sind. Die unmittelbar folgenden §§ 91 und 92 BGB konkretisieren dies und erklären speziell, was unter vertretbaren und verbrauchbaren Sachen zu verstehen ist.<br><br>
+          <strong>Beispiel 2 (Aufbau des Schuldrechts):</strong> Das Schuldrecht gliedert sich in einen Allgemeinen Teil (§§ 241–432 BGB) mit Regelungen, die grundsätzlich für alle Schuldverhältnisse gelten, und einen Besonderen Teil (§§ 433–853 BGB) mit speziellen Regelungen für einzelne Vertragsarten wie Kauf, Miete, Werkvertrag usw.
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end fragen-section -->
+
+</div><!-- end container -->
+
+<footer>
+  Das Bürgerliche Gesetzbuch (BGB) &nbsp;|&nbsp; Unterrichtsmaterial Klasse 12 WR-G9 &nbsp;|&nbsp; Quelle: Bergmoser + Höller Verlag
+</footer>
+
+<script>
+// ================================================================
+//  DATEN: 30 Begriffe mit korrektem Buch (1–5)
+// ================================================================
+const ALLE_BEGRIFFE = [
+  // Buch 1 – Allgemeiner Teil
+  { id:  1, text: "Willenserklärung",       buch: 1 },
+  { id:  2, text: "Geschäftsfähigkeit",     buch: 1 },
+  { id:  3, text: "Juristische Personen",   buch: 1 },
+  { id:  4, text: "Verjährung",             buch: 1 },
+  { id:  5, text: "Vertretung und Vollmacht", buch: 1 },
+  { id:  6, text: "Fristen und Termine",    buch: 1 },
+  // Buch 2 – Schuldrecht
+  { id:  7, text: "Allgemeine Geschäftsbedingungen", buch: 2 },
+  { id:  8, text: "Widerrufsrecht",         buch: 2 },
+  { id:  9, text: "Verbrauchervertrag",     buch: 2 },
+  { id: 10, text: "Mietvertrag",            buch: 2 },
+  { id: 11, text: "Schadensersatz",         buch: 2 },
+  { id: 12, text: "Bürgschaft",             buch: 2 },
+  // Buch 3 – Sachenrecht
+  { id: 13, text: "Besitz",                 buch: 3 },
+  { id: 14, text: "Eigentum",               buch: 3 },
+  { id: 15, text: "Eigentumserwerb",        buch: 3 },
+  { id: 16, text: "Hypothek",               buch: 3 },
+  { id: 17, text: "Grundschuld",            buch: 3 },
+  { id: 18, text: "Dienstbarkeiten",        buch: 3 },
+  // Buch 4 – Familienrecht
+  { id: 19, text: "Eheschließung",          buch: 4 },
+  { id: 20, text: "Eheliches Güterrecht",   buch: 4 },
+  { id: 21, text: "Ehescheidung",           buch: 4 },
+  { id: 22, text: "Elterliche Sorge",       buch: 4 },
+  { id: 23, text: "Vormundschaft",          buch: 4 },
+  { id: 24, text: "Unterhalt",              buch: 4 },
+  // Buch 5 – Erbrecht
+  { id: 25, text: "Testament",              buch: 5 },
+  { id: 26, text: "Erbfolge",               buch: 5 },
+  { id: 27, text: "Vermächtnis",            buch: 5 },
+  { id: 28, text: "Pflichtanteil",          buch: 5 },
+  { id: 29, text: "Erbvertrag",             buch: 5 },
+  { id: 30, text: "Rechtsstellung des Erben", buch: 5 }
+];
+
+// ── State ────────────────────────────────────────────────────────
+let placement  = {};    // id → buch (0 = pool)
+let selected   = null;  // id currently selected
+let checked    = false;
+
+// ── Init ─────────────────────────────────────────────────────────
+function init() {
+  // Shuffle
+  const shuffled = [...ALLE_BEGRIFFE].sort(() => Math.random() - .5);
+  ALLE_BEGRIFFE.length = 0;
+  shuffled.forEach(b => ALLE_BEGRIFFE.push(b));
+
+  ALLE_BEGRIFFE.forEach(b => { placement[b.id] = 0; });
+  renderAll();
+}
+
+// ── Render ───────────────────────────────────────────────────────
+function renderAll() {
+  // Pool
+  const poolInner = document.getElementById('pool-inner');
+  poolInner.innerHTML = '';
+  ALLE_BEGRIFFE.filter(b => placement[b.id] === 0).forEach(b => {
+    poolInner.appendChild(makeChip(b, false));
+  });
+
+  // Bücher
+  for (let n = 1; n <= 5; n++) {
+    const drop = document.getElementById(`drop-${n}`);
+    drop.innerHTML = '<div class="drop-hint">Hier klicken um Begriff einzufügen</div>';
+    ALLE_BEGRIFFE.filter(b => placement[b.id] === n).forEach(b => {
+      drop.appendChild(makeChip(b, true));
+    });
+  }
+
+  updateProgress();
+}
+
+function makeChip(b, inBuch) {
+  const el = document.createElement('span');
+  el.className = 'chip' + (selected === b.id ? ' selected' : '');
+  el.dataset.id = b.id;
+  el.textContent = b.text;
+  if (inBuch) {
+    el.title = 'Klicken: zurück in den Vorrat';
+    el.onclick = (e) => { e.stopPropagation(); chipInBuchClicked(b.id); };
+  } else {
+    el.onclick = (e) => { e.stopPropagation(); poolChipClicked(b.id); };
+  }
+  if (checked) {
+    el.classList.add(b.buch === placement[b.id] ? 'correct' : 'wrong');
+  }
+  return el;
+}
+
+function updateProgress() {
+  const placed = ALLE_BEGRIFFE.filter(b => placement[b.id] !== 0).length;
+  document.getElementById('count').textContent = placed;
+  document.getElementById('prog-fill').style.width = (placed / 30 * 100) + '%';
+  document.getElementById('check-btn').disabled = (placed < 30) || checked;
+}
+
+// ── Interaction ──────────────────────────────────────────────────
+function poolChipClicked(id) {
+  if (checked) return;
+  selected = (selected === id) ? null : id;
+  renderAll();
+}
+
+function chipInBuchClicked(id) {
+  if (checked) return;
+  // Return to pool
+  placement[id] = 0;
+  selected = null;
+  renderAll();
+}
+
+function buchClicked(n) {
+  if (checked) return;
+  if (selected === null) return;
+  if (placement[selected] !== 0) return; // already in a buch
+  placement[selected] = n;
+  selected = null;
+  renderAll();
+}
+
+function poolClicked() {
+  if (checked) return;
+  if (selected !== null && placement[selected] !== 0) {
+    // chip in buch is selected – return to pool
+    placement[selected] = 0;
+    selected = null;
+    renderAll();
+  }
+}
+
+// ── Check ────────────────────────────────────────────────────────
+function checkAnswers() {
+  checked = true;
+  let richtig = 0;
+  ALLE_BEGRIFFE.forEach(b => { if (placement[b.id] === b.buch) richtig++; });
+
+  renderAll(); // shows correct/wrong colors
+
+  const box = document.getElementById('ergebnis');
+  box.classList.add('show');
+  const pct = Math.round(richtig / 30 * 100);
+  if (richtig === 30) {
+    box.className = 'ergebnis-box show perfekt';
+    box.innerHTML = `🎉 Perfekt! Alle 30 Begriffe richtig zugeordnet!`;
+  } else if (richtig >= 24) {
+    box.className = 'ergebnis-box show gut';
+    box.innerHTML = `👍 Gut! ${richtig} von 30 Begriffen richtig (${pct} %). Grüne Chips = richtig, rote = falsch.`;
+  } else {
+    box.className = 'ergebnis-box show knapp';
+    box.innerHTML = `📌 ${richtig} von 30 Begriffen richtig (${pct} %). Schau dir die roten Chips an und vergleiche mit der richtigen Lösung.`;
+  }
+  document.getElementById('check-btn').disabled = true;
+}
+
+// ── Reset ────────────────────────────────────────────────────────
+function resetAll() {
+  ALLE_BEGRIFFE.forEach(b => { placement[b.id] = 0; });
+  selected = null;
+  checked  = false;
+  document.getElementById('ergebnis').className = 'ergebnis-box';
+  document.getElementById('ergebnis').innerHTML = '';
+  document.getElementById('check-btn').disabled = true;
+
+  // Shuffle again
+  ALLE_BEGRIFFE.sort(() => Math.random() - .5);
+  renderAll();
+}
+
+// ── Musterlösung Fragen ──────────────────────────────────────────
+function toggleMuster(btn) {
+  const box = btn.nextElementSibling;
+  const isOpen = box.classList.contains('show');
+  box.classList.toggle('show');
+  btn.textContent = isOpen ? '📋 Musterlösung anzeigen' : '🔼 Musterlösung verbergen';
+}
+
+// ── Start ────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
